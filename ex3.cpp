@@ -3,9 +3,9 @@
 #include <queue>
 #include <mutex>
 #include <semaphore.h>
-#include <random>
 #include <fstream>
 #include <unistd.h>
+#include <pthread.h>
 
 using namespace std;
 
@@ -239,7 +239,7 @@ void produce(string path) {
 
             // initialize the producer thread
             producers.push_back(new BoundedQueue(queue_size));
-            thread(producer, count, articles_number);
+            thread t(producer, count, articles_number);
 
             // continue to the next producer
             count++;
