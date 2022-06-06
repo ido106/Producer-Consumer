@@ -101,9 +101,9 @@ public:
 vector<BoundedQueue*> producers;
 
 // CO-EDITORS: sports-1 news-2 weather-3
-vector<BoundedQueue*> co_editors;
+UnboundedQueue co_editors[3];
 // common queue for all co-editors
-UnboundedQueue common_queue;
+BoundedQueue* common_queue;
 
 
 
@@ -162,16 +162,16 @@ void dispatcher(int n) {
                 }
 
                 // todo i can add a printf and sleep for 0.1 sec to see the outcome better
-                if(std::equal(s.begin(), s.end(), "s")) co_editors[0]->push(s);
-                if(std::equal(s.begin(), s.end(), "n")) co_editors[1]->push(s);
-                if(std::equal(s.begin(), s.end(),"w")) co_editors[2]->push(s);
+                if(std::equal(s.begin(), s.end(), "s")) co_editors[0].push(s);
+                if(std::equal(s.begin(), s.end(), "n")) co_editors[1].push(s);
+                if(std::equal(s.begin(), s.end(),"w")) co_editors[2].push(s);
             }
         }
         if(finished) {
             // notify the co-editors that the job is done
-            co_editors[0]->push("-1");
-            co_editors[1]->push("-1");
-            co_editors[2]->push("-1");
+            co_editors[0].push("-1");
+            co_editors[1].push("-1");
+            co_editors[2].push("-1");
             break;
         }
     }
@@ -180,23 +180,23 @@ void dispatcher(int n) {
 void co_editor(int i) {
     // unbounded
     while(1) {
-        string s = co_editors[i]->pop();
+        string s = co_editors[i].pop();
         if (std::equal(s.begin(), s.end(),"-1")) {
             // notify screen manager that the job is done
-            common_queue.push("-1");
+            common_queue->push("-1");
             break;
         }
         // todo i can add a printf and sleep for 0.1 sec to see the outcome better
         usleep(0.1 * 1000000);
         // co-editors common bounded queue
-        common_queue.push(s);
+        common_queue->push(s);
     }
 }
 
 void screen_manager() {
     int finished_num = 0;
     while(1) {
-        string s = common_queue.pop();
+        string s = common_queue->pop();
         if(std::equal(s.begin(), s.end(),"-1")) {
             finished_num++;
             // check if all co-editors are done
@@ -212,9 +212,7 @@ void free_all() {
     for(auto q : producers) {
         delete q;
     }
-    for(auto q : co_editors) {
-        delete q;
-    }
+    delete common_queue;
 }
 
 void produce(string path) {
@@ -250,14 +248,17 @@ void produce(string path) {
         if(line.find("Co-Editor", 0) == 0) {
             string s_editor_size = line.substr(24);
             int editor_queue_size = stoi(s_editor_size);
+            // initialize co editors common queue
+            common_queue = new BoundedQueue(editor_queue_size);
 
-            // todo CONTINUE FROM HERE
             // sports
             thread sports_co_editor(co_editor, 1);
             // news
             thread news_co_editor(co_editor, 2);
             // weather
             thread weather_co_editor(co_editor, 3);
+
+            thread disp(dispatcher,count);
         }
     }
 }
@@ -271,21 +272,11 @@ int main(int argc, char *argv[]) {
     string config_path = argv[1];
     produce(config_path);
 
-    thread disp(dispatcher);
+    //thread disp(dispatcher);
 
     thread manager(screen_manager);
-
-    // todo wait for producers ?
-    // necessary ?
-    //disp.join();
-    //sports_co_editor.join();
-    //news_co_editor.join();
-    //weather_co_editor.join();
-
-    // this is necessary
     manager.join();
 
     free_all();
-
     return 0;
 }
