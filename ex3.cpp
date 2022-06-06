@@ -1,48 +1,95 @@
 #include <iostream>
 #include <thread>
 #include <queue>
+#include <mutex>
+#include <semaphore.h>
 
 using namespace std;
 
 class BoundedQueue {
+private:
     queue<string> _queue;
+    mutex m;
+    sem_t full;
+    sem_t empty;
 public:
+    BoundedQueue(int size): _queue() {
+        sem_init(&full, 0, 0);
+        sem_init(&empty, 0, size);
+    }
+
     string pop() {
         // SEMAPHORE, MUTEX
+        sem_wait(&full);
+        m.lock();
+
         if(_queue.empty()) {
+            m.unlock();
+            sem_post(&empty);
             return nullptr;
         }
         string s = _queue.front();
         _queue.pop();
+
+        m.unlock();
+        sem_post(&empty);
+
         return s;
         // SEMAPHORE, MUTEX
     }
 
     void push(string s) {
         // SEMAPHORE, MUTEX
+        sem_wait(&empty);
+        m.lock();
+
         _queue.push(s);
+
+        m.unlock();
+        sem_post(&full);
         // SEMAPHORE, MUTEX
     }
 };
 
 class UnboundedQueue {
+private:
     queue<string> _queue;
-
+    mutex m;
+    sem_t full;
 public:
+    UnboundedQueue(): _queue() {
+        sem_init(&full,0 ,0);
+    }
+
     string pop() {
         // SEMAPHORE, MUTEX (no need for "empty", only the "full" and the mutex)
+        sem_wait(&full);
+        m.lock();
+
         if(_queue.empty()) {
+            m.unlock();
+            sem_post(&full);
             return nullptr;
         }
         string s = _queue.front();
         _queue.pop();
+
+        m.unlock();
+
         return s;
         // SEMAPHORE, MUTEX (no need for "empty", only the "full" and the mutex)
     }
 
     void push(string s) {
         // SEMAPHORE, MUTEX (no need for "empty", only the "full" and the mutex)
+
+        m.lock();
+
         _queue.push(s);
+
+        m.unlock();
+        sem_post(&full);
+
         // SEMAPHORE, MUTEX (no need for "empty", only the "full" and the mutex)
     }
 };
@@ -50,7 +97,7 @@ public:
 // queues number
 const int N = 10;
 
-// GLOBAL for dispatcher
+// producers
 BoundedQueue bq[N];
 // CO-EDITORS: sports-1 news-2 weather-3
 UnboundedQueue ubq[3];
