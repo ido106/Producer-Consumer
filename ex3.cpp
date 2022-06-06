@@ -3,6 +3,7 @@
 #include <queue>
 #include <mutex>
 #include <semaphore.h>
+#include <random>
 
 using namespace std;
 
@@ -68,7 +69,6 @@ public:
 
         if(_queue.empty()) {
             m.unlock();
-            sem_post(&full);
             return nullptr;
         }
         string s = _queue.front();
@@ -104,9 +104,35 @@ UnboundedQueue ubq[3];
 // common queue for all co-editors
 BoundedQueue common_queue;
 
-void producer(int i) {
+
+
+void producer(int i, int num) {
+    cout << "Producing in " << i << endl;
     // todo i can add a printf and sleep for 0.1 sec to see the outcome better
-    // bq[i]
+
+    const string subjects[] = {"SPORTS", "NEWS", "WEATHER"};
+    int created[] = {0, 0, 0};
+
+    for(int j=0; j<num ; j++) {
+        string article = "producer ";
+
+        // add producer id
+        article += i;
+        article += " ";
+
+        // randomize subject
+        int k = rand() % 3;
+        article += subjects[k];
+        article += " ";
+
+        // add the number of article made for this type of subject
+        article += created[k];
+        created[k] ++;
+        bq[i].push(article);
+    }
+
+    // notify dispatcher i am done
+    bq[i].push("-1");
 }
 
 void dispatcher() {
