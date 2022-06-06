@@ -143,12 +143,13 @@ void producer(int i, int num) {
 void dispatcher(int n) {
     // ROUND ROBIN
 
-    bool manage[N] = {true};
+    vector<bool> manage(n, true);
+
     bool finished = true;
 
     while(1) {
         finished = true;
-        for(int i=0; i<N; i++) {
+        for(int i=0; i<n; i++) {
             if(manage[i]) {
                 finished = false;
 
