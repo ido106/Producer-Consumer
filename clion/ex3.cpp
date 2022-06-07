@@ -199,7 +199,7 @@ void dispatcher(dispatcherArgs * dispatcherArgs1) {
         //cout << "looping in dispatcher .. " << endl;
         //finished = true;
         for(int i=0; i<n; i++) {
-            cout << "for loop number " << i << " in dispatcher" << endl;
+            //cout << "for loop number " << i << " in dispatcher" << endl;
             if(manage[i]) {
                 //finished = false;
 
@@ -219,7 +219,7 @@ void dispatcher(dispatcherArgs * dispatcherArgs1) {
 //                        if(s.find("WEATHER") != string::npos) co_editors[2].push(s);
 //                        s = producers.at(i)->pop();
 //                    }
-
+                    done++;
                     manage[i] = false;
                     continue;
                 }
@@ -232,13 +232,14 @@ void dispatcher(dispatcherArgs * dispatcherArgs1) {
             }
         }
         //if(finished) {
-            // notify the co-editors that the job is done
-            co_editors[0].push("-1");
-            co_editors[1].push("-1");
-            co_editors[2].push("-1");
-            break;
+
         //}
     }
+    // notify the co-editors that the job is done
+    co_editors[0].push("-1");
+    co_editors[1].push("-1");
+    co_editors[2].push("-1");
+
     //cout << "DISPATCHER DONE" << endl;
     delete dispatcherArgs1;
 
