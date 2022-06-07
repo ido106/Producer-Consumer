@@ -153,6 +153,7 @@ void producer(producerArgs * producerArgs1) {
     int created[] = {0, 0, 0};
 
     for(int j=0; j<num ; j++) {
+        //cout << "Again !" << endl;
         //cout << "in loop " << j << endl;
         string article = "producer ";
 
@@ -196,6 +197,7 @@ void dispatcher(dispatcherArgs * dispatcherArgs1) {
     //bool finished = true;
 
     while(done != n) {
+        //cout << "Again and AGAIN!" << endl;
         //cout << "looping in dispatcher .. " << endl;
         //finished = true;
         for(int i=0; i<n; i++) {
@@ -251,13 +253,16 @@ void co_editor(coEditorArgs * coEditorArgs1) {
     //cout << "starting co editor number "<< i << endl;
     // unbounded
     while(1) {
+
         //cout << "start looping in co editor... " << endl;
         string s = co_editors[i].pop();
         if (s == "-1") {
+            cout << "Again and AGAIN!" << endl;
             // notify screen manager that the job is done
             common_queue->push("-1");
             break;
         }
+
         if(s.length() == 0) continue;
 
         // i can add a printf and sleep for 0.1 sec to see the outcome better
