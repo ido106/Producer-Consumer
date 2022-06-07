@@ -39,14 +39,15 @@ public:
     string pop() {
         //cout << "popping BoundedQueue .. " << endl;
         // SEMAPHORE, MUTEX
+        //cout << "deadlock in BoundedQueue pop" << endl;
         sem_wait(&full);
         m.lock();
 
-        if(_queue.empty()) {
-            m.unlock();
-            sem_post(&empty);
-            return "";
-        }
+//        if(_queue.empty()) {
+//            m.unlock();
+//            sem_post(&empty);
+//            return "";
+//        }
         string s = _queue.front();
         _queue.pop();
 
@@ -54,13 +55,15 @@ public:
         sem_post(&empty);
 
         //cout << "done popping BoundedQueue !" << endl;
+        //cout << "exit deadlock " << endl;
         return s;
         // SEMAPHORE, MUTEX
     }
 
-    void push(string s) {
+    void push(const string s) {
         //cout << "pushing BoundedQueue ..." << endl;
         // SEMAPHORE, MUTEX
+        //cout << "deadlock in BoundedQueue push" << endl;
         sem_wait(&empty);
         m.lock();
 
@@ -68,6 +71,8 @@ public:
 
         m.unlock();
         sem_post(&full);
+
+        //cout << "exit deadlock " << endl;
         // SEMAPHORE, MUTEX
         //cout << "done pushing BoundedQueue !" << endl;
     }
@@ -76,31 +81,34 @@ public:
 class UnboundedQueue {
 private:
     queue<string> _queue;
-    mutex m;
+    sem_t m;
     sem_t full;
 public:
     UnboundedQueue(): _queue() {
         //cout << "constructing UNBOUNDED queue .. " << endl;
         sem_init(&full,0 ,0);
+        sem_init(&m, 0, 1);
         //cout << "done constructing UNBOUNDED queue ! " << endl;
     }
 
     string pop() {
+       // cout << "deadlock in UnboundedQueue pop" << endl;
         //cout << "popping UNBOUNDED Queue .. " << endl;
         // SEMAPHORE, MUTEX (no need for "empty", only the "full" and the mutex)
         sem_wait(&full);
-        m.lock();
+        sem_wait(&m);
 
-        if(_queue.empty()) {
-            m.unlock();
-            return "";
-        }
+//        if(_queue.empty()) {
+//            m.unlock();
+//            return "";
+//        }
         string s = _queue.front();
         _queue.pop();
 
-        m.unlock();
+        sem_post(&m);
 
         //cout << "done popping UNBOUNDED Queue !" << endl;
+        //cout << "exit deadlock " << endl;
         return s;
         // SEMAPHORE, MUTEX (no need for "empty", only the "full" and the mutex)
     }
@@ -108,15 +116,18 @@ public:
     void push(string s) {
         //cout << "pushing UNBOUNDED Queue .. " << endl;
         // SEMAPHORE, MUTEX (no need for "empty", only the "full" and the mutex)
+        //cout << "deadlock in UnboundedQueue push" << endl;
 
-        m.lock();
+        sem_wait(&m);
 
         _queue.push(s);
 
-        m.unlock();
+        sem_post(&m);
         sem_post(&full);
 
         //cout << "pushing UNBOUNDED Queue ! " << endl;
+       // cout << "exit deadlock " << endl;
+
         // SEMAPHORE, MUTEX (no need for "empty", only the "full" and the mutex)
     }
 };
@@ -175,47 +186,63 @@ void producer(producerArgs * producerArgs1) {
 void dispatcher(dispatcherArgs * dispatcherArgs1) {
     //cout << "DISPATCHER STARTED" << endl;
     int n = dispatcherArgs1->n;
+    int done = 0;
 
     // ROUND ROBIN
 
     vector<bool> manage(n, true);
 
-    bool finished = true;
 
-    while(1) {
+    //bool finished = true;
+
+    while(done != n) {
         //cout << "looping in dispatcher .. " << endl;
-        finished = true;
+        //finished = true;
         for(int i=0; i<n; i++) {
-            //cout << "for loop number " << i << " in dispatcher" << endl;
+            cout << "for loop number " << i << " in dispatcher" << endl;
             if(manage[i]) {
-                finished = false;
+                //finished = false;
 
                 // WAIT FOR bq[i] IF QUEUE IS EMPTY - producer
 
                 string s = producers.at(i)->pop();
                 //string s = bq[i].pop();
                 if (s == "-1") {
+                    // empty stack
+
+//                    int j = i;
+//                    s = producers.at(i)->pop();
+//                    while(s.length() != 0) {
+//                        cout << "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"<< j++ << endl;
+//                        if(s.find("SPORTS") != string::npos) co_editors[0].push(s);
+//                        if(s.find("NEWS") != string::npos) co_editors[1].push(s);
+//                        if(s.find("WEATHER") != string::npos) co_editors[2].push(s);
+//                        s = producers.at(i)->pop();
+//                    }
+
                     manage[i] = false;
                     continue;
                 }
                 if(s.length() == 0) continue;
 
-                // todo i can add a printf and sleep for 0.1 sec to see the outcome better
+                // i can add a printf and sleep for 0.1 sec to see the outcome better
                 if(s.find("SPORTS") != string::npos) co_editors[0].push(s);
                 if(s.find("NEWS") != string::npos) co_editors[1].push(s);
                 if(s.find("WEATHER") != string::npos) co_editors[2].push(s);
             }
         }
-        if(finished) {
+        //if(finished) {
             // notify the co-editors that the job is done
             co_editors[0].push("-1");
             co_editors[1].push("-1");
             co_editors[2].push("-1");
             break;
-        }
+        //}
     }
     //cout << "DISPATCHER DONE" << endl;
     delete dispatcherArgs1;
+
+    cout << endl << "FINISHED DISPTACHER" << endl <<endl;
 }
 
 void co_editor(coEditorArgs * coEditorArgs1) {
@@ -232,8 +259,9 @@ void co_editor(coEditorArgs * coEditorArgs1) {
         }
         if(s.length() == 0) continue;
 
-        // todo i can add a printf and sleep for 0.1 sec to see the outcome better
+        // i can add a printf and sleep for 0.1 sec to see the outcome better
         //usleep(0.1 * 1000000);
+
         // co-editors common bounded queue
         common_queue->push(s);
     }
@@ -312,17 +340,17 @@ void produce(string path) {
 
             // sports
             coEditorArgs* coEditorArgs1 = new coEditorArgs ;
-            coEditorArgs1->i = 1;
+            coEditorArgs1->i = 0;
             thread (co_editor, coEditorArgs1).detach();
 
             // news
             coEditorArgs* coEditorArgs2 = new coEditorArgs ;
-            coEditorArgs1->i = 2;
+            coEditorArgs1->i = 1;
             thread (co_editor, coEditorArgs2).detach();
 
             // weather
             coEditorArgs* coEditorArgs3 = new coEditorArgs ;
-            coEditorArgs1->i = 3;
+            coEditorArgs1->i = 2;
             thread (co_editor, coEditorArgs3).detach();
         }
     }
