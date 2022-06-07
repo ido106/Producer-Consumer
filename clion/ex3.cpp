@@ -30,14 +30,14 @@ private:
     sem_t empty;
 public:
     BoundedQueue(int size): _queue() {
-        cout << "constructing bounded queue .. " << endl;
+        //cout << "constructing bounded queue .. " << endl;
         sem_init(&full, 0, 0);
         sem_init(&empty, 0, size);
-        cout << "done constructing bounded queue !" << endl;
+        //cout << "done constructing bounded queue !" << endl;
     }
 
     string pop() {
-        cout << "popping BoundedQueue .. " << endl;
+        //cout << "popping BoundedQueue .. " << endl;
         // SEMAPHORE, MUTEX
         sem_wait(&full);
         m.lock();
@@ -53,13 +53,13 @@ public:
         m.unlock();
         sem_post(&empty);
 
-        cout << "done popping BoundedQueue !" << endl;
+        //cout << "done popping BoundedQueue !" << endl;
         return s;
         // SEMAPHORE, MUTEX
     }
 
     void push(string s) {
-        cout << "pushing BoundedQueue ..." << endl;
+        //cout << "pushing BoundedQueue ..." << endl;
         // SEMAPHORE, MUTEX
         sem_wait(&empty);
         m.lock();
@@ -69,7 +69,7 @@ public:
         m.unlock();
         sem_post(&full);
         // SEMAPHORE, MUTEX
-        cout << "done pushing BoundedQueue !" << endl;
+        //cout << "done pushing BoundedQueue !" << endl;
     }
 };
 
@@ -80,13 +80,13 @@ private:
     sem_t full;
 public:
     UnboundedQueue(): _queue() {
-        cout << "constructing UNBOUNDED queue .. " << endl;
+        //cout << "constructing UNBOUNDED queue .. " << endl;
         sem_init(&full,0 ,0);
-        cout << "done constructing UNBOUNDED queue ! " << endl;
+        //cout << "done constructing UNBOUNDED queue ! " << endl;
     }
 
     string pop() {
-        cout << "popping UNBOUNDED Queue .. " << endl;
+        //cout << "popping UNBOUNDED Queue .. " << endl;
         // SEMAPHORE, MUTEX (no need for "empty", only the "full" and the mutex)
         sem_wait(&full);
         m.lock();
@@ -100,13 +100,13 @@ public:
 
         m.unlock();
 
-        cout << "done popping UNBOUNDED Queue !" << endl;
+        //cout << "done popping UNBOUNDED Queue !" << endl;
         return s;
         // SEMAPHORE, MUTEX (no need for "empty", only the "full" and the mutex)
     }
 
     void push(string s) {
-        cout << "pushing UNBOUNDED Queue .. " << endl;
+        //cout << "pushing UNBOUNDED Queue .. " << endl;
         // SEMAPHORE, MUTEX (no need for "empty", only the "full" and the mutex)
 
         m.lock();
@@ -116,7 +116,7 @@ public:
         m.unlock();
         sem_post(&full);
 
-        cout << "pushing UNBOUNDED Queue ! " << endl;
+        //cout << "pushing UNBOUNDED Queue ! " << endl;
         // SEMAPHORE, MUTEX (no need for "empty", only the "full" and the mutex)
     }
 };
@@ -136,37 +136,36 @@ void producer(producerArgs * producerArgs1) {
     int i = producerArgs1->i;
     int num = producerArgs1->num;
 
-    cout << "Producing in Progress 1 : " << i << endl;
-    // todo i can add a printf and sleep for 0.1 sec to see the outcome better
+    //cout << "Producing in Progress 1 : " << i << endl;
 
     const string subjects[] = {"SPORTS", "NEWS", "WEATHER"};
     int created[] = {0, 0, 0};
 
     for(int j=0; j<num ; j++) {
-        cout << "in loop " << j << endl;
+        //cout << "in loop " << j << endl;
         string article = "producer ";
 
         // add producer id
-        article += i;
+        article += to_string(i);
         article += " ";
 
-        cout << "randomizing.. " << endl;
+        //cout << "randomizing.. " << endl;
         // randomize subject
         int k = rand() % 3;
         article += subjects[k];
         article += " ";
 
         // add the number of article made for this type of subject
-        article += created[k];
+        article += to_string(created[k]);
         article += "\n";
 
-        cout << "pushing.. " << endl;
+        //cout << "pushing.. " << endl;
         created[k] ++;
         producers.at(i)->push(article);
         //bq[i].push(article);
     }
 
-    cout << "done looping ! pushing -1" << endl;
+    //cout << "done looping in producer number " << i << "! pushing -1" << endl;
     // notify dispatcher i am done
     producers.at(i)->push("-1");
     delete producerArgs1;
@@ -174,7 +173,7 @@ void producer(producerArgs * producerArgs1) {
 }
 
 void dispatcher(dispatcherArgs * dispatcherArgs1) {
-    cout << "DISPATCHER STARTED" << endl;
+    //cout << "DISPATCHER STARTED" << endl;
     int n = dispatcherArgs1->n;
 
     // ROUND ROBIN
@@ -184,10 +183,10 @@ void dispatcher(dispatcherArgs * dispatcherArgs1) {
     bool finished = true;
 
     while(1) {
-        cout << "looping in dispatcher .. " << endl;
+        //cout << "looping in dispatcher .. " << endl;
         finished = true;
         for(int i=0; i<n; i++) {
-            cout << "for loop number " << i << " in dispatcher" << endl;
+            //cout << "for loop number " << i << " in dispatcher" << endl;
             if(manage[i]) {
                 finished = false;
 
@@ -195,10 +194,11 @@ void dispatcher(dispatcherArgs * dispatcherArgs1) {
 
                 string s = producers.at(i)->pop();
                 //string s = bq[i].pop();
-                if (std::equal(s.begin(), s.end(),"-1")) {
+                if (s == "-1") {
                     manage[i] = false;
                     continue;
                 }
+                if(s.length() == 0) continue;
 
                 // todo i can add a printf and sleep for 0.1 sec to see the outcome better
                 if(s.find("SPORTS") != string::npos) co_editors[0].push(s);
@@ -214,42 +214,46 @@ void dispatcher(dispatcherArgs * dispatcherArgs1) {
             break;
         }
     }
-    cout << "DISPATCHER DONE" << endl;
+    //cout << "DISPATCHER DONE" << endl;
     delete dispatcherArgs1;
 }
 
 void co_editor(coEditorArgs * coEditorArgs1) {
-    cout << "starting co editor... " << endl;
     int i = coEditorArgs1->i;
+    //cout << "starting co editor number "<< i << endl;
     // unbounded
     while(1) {
-        cout << "start looping in co editor... " << endl;
+        //cout << "start looping in co editor... " << endl;
         string s = co_editors[i].pop();
-        if (std::equal(s.begin(), s.end(),"-1")) {
+        if (s == "-1") {
             // notify screen manager that the job is done
             common_queue->push("-1");
             break;
         }
+        if(s.length() == 0) continue;
+
         // todo i can add a printf and sleep for 0.1 sec to see the outcome better
-        usleep(0.1 * 1000000);
+        //usleep(0.1 * 1000000);
         // co-editors common bounded queue
         common_queue->push(s);
     }
-    cout << "done CO EDITOR number " << i << endl;
+    //cout << "done CO EDITOR number " << i << endl;
     delete coEditorArgs1;
 }
 
 void screen_manager() {
-    cout << "starting screen manager ..." << endl;
+    //cout << "starting screen manager ..." << endl;
     int finished_num = 0;
     while(1) {
-        cout << "start looping in screen manager ... " << endl;
+        //cout << "start looping in screen manager ... " << endl;
         string s = common_queue->pop();
-        if(std::equal(s.begin(), s.end(),"-1")) {
+        if(s == "-1") {
             finished_num++;
             // check if all co-editors are done
             if(finished_num == 3) break;
+            continue;
         }
+        if(s.length() == 0) continue;
 
         // print the string
         cout << s << endl;
@@ -301,25 +305,25 @@ void produce(string path) {
             // initialize co editors common queue
             common_queue = new BoundedQueue(editor_queue_size);
 
+            // dispatcher
+            dispatcherArgs * dispatcherArgs1 = new dispatcherArgs;
+            dispatcherArgs1->n = count;
+            thread (dispatcher,dispatcherArgs1).detach();
+
             // sports
             coEditorArgs* coEditorArgs1 = new coEditorArgs ;
             coEditorArgs1->i = 1;
-            thread sports_co_editor(co_editor, coEditorArgs1);
+            thread (co_editor, coEditorArgs1).detach();
 
             // news
             coEditorArgs* coEditorArgs2 = new coEditorArgs ;
             coEditorArgs1->i = 2;
-            thread news_co_editor(co_editor, coEditorArgs2);
+            thread (co_editor, coEditorArgs2).detach();
 
             // weather
             coEditorArgs* coEditorArgs3 = new coEditorArgs ;
             coEditorArgs1->i = 3;
-            thread weather_co_editor(co_editor, coEditorArgs3);
-
-            // dispatcher
-            dispatcherArgs * dispatcherArgs1 = new dispatcherArgs;
-            dispatcherArgs1->n = count;
-            thread disp(dispatcher,dispatcherArgs1);
+            thread (co_editor, coEditorArgs3).detach();
         }
     }
 }
