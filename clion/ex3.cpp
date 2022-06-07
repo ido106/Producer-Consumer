@@ -14,6 +14,14 @@ typedef struct producerArgs {
     int num;
 } producerArgs;
 
+typedef struct coEditorArgs {
+    int i;
+} coEditorArgs;
+
+typedef struct dispatcherArgs {
+    int n;
+} dispatcherArgs;
+
 class BoundedQueue {
 private:
     queue<string> _queue;
@@ -22,11 +30,14 @@ private:
     sem_t empty;
 public:
     BoundedQueue(int size): _queue() {
+        cout << "constructing bounded queue .. " << endl;
         sem_init(&full, 0, 0);
         sem_init(&empty, 0, size);
+        cout << "done constructing bounded queue !" << endl;
     }
 
     string pop() {
+        cout << "popping BoundedQueue .. " << endl;
         // SEMAPHORE, MUTEX
         sem_wait(&full);
         m.lock();
@@ -42,11 +53,13 @@ public:
         m.unlock();
         sem_post(&empty);
 
+        cout << "done popping BoundedQueue !" << endl;
         return s;
         // SEMAPHORE, MUTEX
     }
 
     void push(string s) {
+        cout << "pushing BoundedQueue ..." << endl;
         // SEMAPHORE, MUTEX
         sem_wait(&empty);
         m.lock();
@@ -56,6 +69,7 @@ public:
         m.unlock();
         sem_post(&full);
         // SEMAPHORE, MUTEX
+        cout << "done pushing BoundedQueue !" << endl;
     }
 };
 
@@ -66,10 +80,13 @@ private:
     sem_t full;
 public:
     UnboundedQueue(): _queue() {
+        cout << "constructing UNBOUNDED queue .. " << endl;
         sem_init(&full,0 ,0);
+        cout << "done constructing UNBOUNDED queue ! " << endl;
     }
 
     string pop() {
+        cout << "popping UNBOUNDED Queue .. " << endl;
         // SEMAPHORE, MUTEX (no need for "empty", only the "full" and the mutex)
         sem_wait(&full);
         m.lock();
@@ -83,11 +100,13 @@ public:
 
         m.unlock();
 
+        cout << "done popping UNBOUNDED Queue !" << endl;
         return s;
         // SEMAPHORE, MUTEX (no need for "empty", only the "full" and the mutex)
     }
 
     void push(string s) {
+        cout << "pushing UNBOUNDED Queue .. " << endl;
         // SEMAPHORE, MUTEX (no need for "empty", only the "full" and the mutex)
 
         m.lock();
@@ -97,6 +116,7 @@ public:
         m.unlock();
         sem_post(&full);
 
+        cout << "pushing UNBOUNDED Queue ! " << endl;
         // SEMAPHORE, MUTEX (no need for "empty", only the "full" and the mutex)
     }
 };
@@ -153,7 +173,10 @@ void producer(producerArgs * producerArgs1) {
     //bq[i].push("-1");
 }
 
-void dispatcher(int n) {
+void dispatcher(dispatcherArgs * dispatcherArgs1) {
+    cout << "DISPATCHER STARTED" << endl;
+    int n = dispatcherArgs1->n;
+
     // ROUND ROBIN
 
     vector<bool> manage(n, true);
@@ -161,8 +184,10 @@ void dispatcher(int n) {
     bool finished = true;
 
     while(1) {
+        cout << "looping in dispatcher .. " << endl;
         finished = true;
         for(int i=0; i<n; i++) {
+            cout << "for loop number " << i << " in dispatcher" << endl;
             if(manage[i]) {
                 finished = false;
 
@@ -176,9 +201,9 @@ void dispatcher(int n) {
                 }
 
                 // todo i can add a printf and sleep for 0.1 sec to see the outcome better
-                if(std::equal(s.begin(), s.end(), "s")) co_editors[0].push(s);
-                if(std::equal(s.begin(), s.end(), "n")) co_editors[1].push(s);
-                if(std::equal(s.begin(), s.end(),"w")) co_editors[2].push(s);
+                if(s.find("SPORTS") != string::npos) co_editors[0].push(s);
+                if(s.find("NEWS") != string::npos) co_editors[1].push(s);
+                if(s.find("WEATHER") != string::npos) co_editors[2].push(s);
             }
         }
         if(finished) {
@@ -189,11 +214,16 @@ void dispatcher(int n) {
             break;
         }
     }
+    cout << "DISPATCHER DONE" << endl;
+    delete dispatcherArgs1;
 }
 
-void co_editor(int i) {
+void co_editor(coEditorArgs * coEditorArgs1) {
+    cout << "starting co editor... " << endl;
+    int i = coEditorArgs1->i;
     // unbounded
     while(1) {
+        cout << "start looping in co editor... " << endl;
         string s = co_editors[i].pop();
         if (std::equal(s.begin(), s.end(),"-1")) {
             // notify screen manager that the job is done
@@ -205,11 +235,15 @@ void co_editor(int i) {
         // co-editors common bounded queue
         common_queue->push(s);
     }
+    cout << "done CO EDITOR number " << i << endl;
+    delete coEditorArgs1;
 }
 
 void screen_manager() {
+    cout << "starting screen manager ..." << endl;
     int finished_num = 0;
     while(1) {
+        cout << "start looping in screen manager ... " << endl;
         string s = common_queue->pop();
         if(std::equal(s.begin(), s.end(),"-1")) {
             finished_num++;
@@ -217,9 +251,10 @@ void screen_manager() {
             if(finished_num == 3) break;
         }
 
-        // todo print to screen the articles
-        printf("have to print something....");
+        // print the string
+        cout << s << endl;
     }
+    cout << "finished screen manager !" << endl;
 }
 
 void free_all() {
@@ -267,13 +302,24 @@ void produce(string path) {
             common_queue = new BoundedQueue(editor_queue_size);
 
             // sports
-            thread sports_co_editor(co_editor, 1);
-            // news
-            thread news_co_editor(co_editor, 2);
-            // weather
-            thread weather_co_editor(co_editor, 3);
+            coEditorArgs* coEditorArgs1 = new coEditorArgs ;
+            coEditorArgs1->i = 1;
+            thread sports_co_editor(co_editor, coEditorArgs1);
 
-            thread disp(dispatcher,count);
+            // news
+            coEditorArgs* coEditorArgs2 = new coEditorArgs ;
+            coEditorArgs1->i = 2;
+            thread news_co_editor(co_editor, coEditorArgs2);
+
+            // weather
+            coEditorArgs* coEditorArgs3 = new coEditorArgs ;
+            coEditorArgs1->i = 3;
+            thread weather_co_editor(co_editor, coEditorArgs3);
+
+            // dispatcher
+            dispatcherArgs * dispatcherArgs1 = new dispatcherArgs;
+            dispatcherArgs1->n = count;
+            thread disp(dispatcher,dispatcherArgs1);
         }
     }
 }
