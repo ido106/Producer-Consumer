@@ -1,0 +1,3 @@
+/home/ido/Projects/Repositories/ProducerConsumer/clion/cmake-build-debug/CMakeFiles/ProducerConsumer.dir
+/home/ido/Projects/Repositories/ProducerConsumer/clion/cmake-build-debug/CMakeFiles/edit_cache.dir
+/home/ido/Projects/Repositories/ProducerConsumer/clion/cmake-build-debug/CMakeFiles/rebuild_cache.dir

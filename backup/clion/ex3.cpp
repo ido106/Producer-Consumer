@@ -143,9 +143,7 @@ BoundedQueue* common_queue;
 
 
 
-void producer(producerArgs * producerArgs1) {
-    int i = producerArgs1->i;
-    int num = producerArgs1->num;
+void producer(int i, int num) {
 
     //cout << "Producing in Progress 1 : " << i << endl;
 
@@ -153,6 +151,7 @@ void producer(producerArgs * producerArgs1) {
     int created[] = {0, 0, 0};
 
     for(int j=0; j<num ; j++) {
+        //cout << "Again !" << endl;
         //cout << "in loop " << j << endl;
         string article = "producer ";
 
@@ -196,6 +195,7 @@ void dispatcher(dispatcherArgs * dispatcherArgs1) {
     //bool finished = true;
 
     while(done != n) {
+        //cout << "Again and AGAIN!" << endl;
         //cout << "looping in dispatcher .. " << endl;
         //finished = true;
         for(int i=0; i<n; i++) {
@@ -243,21 +243,24 @@ void dispatcher(dispatcherArgs * dispatcherArgs1) {
     //cout << "DISPATCHER DONE" << endl;
     delete dispatcherArgs1;
 
-    cout << endl << "FINISHED DISPTACHER" << endl <<endl;
+    //cout << endl << "FINISHED DISPTACHER" << endl <<endl;
 }
 
-void co_editor(coEditorArgs * coEditorArgs1) {
-    int i = coEditorArgs1->i;
+void co_editor(int i) {
+    //int i = coEditorArgs1->i;
     //cout << "starting co editor number "<< i << endl;
     // unbounded
     while(1) {
+
         //cout << "start looping in co editor... " << endl;
         string s = co_editors[i].pop();
         if (s == "-1") {
+            //cout << "Again and AGAIN! " << i << endl;
             // notify screen manager that the job is done
             common_queue->push("-1");
             break;
         }
+
         if(s.length() == 0) continue;
 
         // i can add a printf and sleep for 0.1 sec to see the outcome better
@@ -266,7 +269,7 @@ void co_editor(coEditorArgs * coEditorArgs1) {
         // co-editors common bounded queue
         common_queue->push(s);
     }
-    //cout << "done CO EDITOR number " << i << endl;
+    cout << "done CO EDITOR number " << i << endl;
     delete coEditorArgs1;
 }
 
@@ -297,10 +300,37 @@ void free_all() {
     delete common_queue;
 }
 
-void produce(string path) {
-    ifstream stream(path);
+//void produce(string path) {
+//
+//}
+void* producerHelper(void * args) {
+    producerArgs* producerArgs1 = (producerArgs *) args;
+    producer(producerArgs1->i, producerArgs1->num);
+    return nullptr;
+}
+
+void* coEditorHelper(void * args) {
+    coEditorArgs* coEditorArgs1 = (coEditorArgs *) args;
+    co_editor(coEditorArgs1->i);
+    //producerArgs* producerArgs1 = (producerArgs *) args;
+    //producer(producerArgs1->i, producerArgs1->num);
+    return nullptr;
+}
+
+int main(int argc, char *argv[]) {
+    if(argc<2) {
+        printf("Not enough arguments \n");
+        return 0;
+    }
+
+    string config_path = argv[1];
+    //produce(config_path);
+
+    ifstream stream(config_path);
     string line;
     int count = 0;
+    vector<thread*> threads;
+
     while(getline(stream, line)) {
         // if the line is blank
         if(line.size() ==0) {
@@ -323,7 +353,8 @@ void produce(string path) {
             producerArgs* producerArgs1 = new producerArgs ;
             producerArgs1->i = count;
             producerArgs1->num = articles_number;
-            thread (producer,producerArgs1).detach();
+            //thread (producer,producerArgs1).detach();
+            threads.push_back(new thread(producerHelper,(void *)(producerArgs1)));
 
             // continue to the next producer
             count++;
@@ -342,30 +373,22 @@ void produce(string path) {
             // sports
             coEditorArgs* coEditorArgs1 = new coEditorArgs ;
             coEditorArgs1->i = 0;
-            thread (co_editor, coEditorArgs1).detach();
+            thread* editor1 = new thread(coEditorHelper,(void *)(coEditorArgs1));
+            //thread (coEditorHelper, coEditorArgs1);
 
             // news
             coEditorArgs* coEditorArgs2 = new coEditorArgs ;
-            coEditorArgs2->i = 1;
-            thread (co_editor, coEditorArgs2).detach();
+            coEditorArgs1->i = 1;
+            thread* editor2 = new thread(coEditorHelper,(void *)(coEditorArgs1));
+            thread (coEditorHelper, coEditorArgs2);
 
             // weather
             coEditorArgs* coEditorArgs3 = new coEditorArgs ;
-            coEditorArgs3->i = 2;
-            thread (co_editor, coEditorArgs3).detach();
+            coEditorArgs1->i = 2;
+            thread (coEditorHelper, coEditorArgs3);
+
         }
     }
-}
-
-int main(int argc, char *argv[]) {
-    if(argc<2) {
-        printf("Not enough arguments \n");
-        return 0;
-    }
-
-    string config_path = argv[1];
-    produce(config_path);
-
     //thread disp(dispatcher);
 
     thread manager(screen_manager);
