@@ -4,7 +4,7 @@ The purpose of this assignment is to gain experience with concurrent programming
 The scenario is also intended to give a feel for the performance impact of synchronization constructs under different loads.  
 The overall scenario we are simulating is that of news broadcasting. Different types of stories are produced and the system sorts them and displays them to the public.  
 In this assignment, the ‘new stories’ are simulated by simple strings which should be displayed to the screen in the order they arrive.  
-In the scenario that you should implement, there are 4 types of active actors: Producer, Dispatcher, Co-Editors and Screen Manager.  
+In the scenario, there are 4 types of active actors: Producer, Dispatcher, Co-Editors and Screen Manager.  
 <img src="https://user-images.githubusercontent.com/92651125/186007234-86c36a37-732a-4618-bd4e-86351ccbf87f.png" width="800">
 
 ## Producer
