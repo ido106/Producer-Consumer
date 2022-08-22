@@ -1,18 +1,18 @@
 # General Description
 
-The purpose of this assignment is to gain experience with concurrent programming and synchronization mechanisms.
-The scenario is also intended to give a feel for the performance impact of synchronization constructs under different loads.
-The overall scenario we are simulating is that of news broadcasting. Different types of stories are produced and the system sorts them and displays them to the public.
-In this assignment, the ‘new stories’ are simulated by simple strings which should be displayed to the screen in the order they arrive.
-In the scenario that you should implement, there are 4 types of active actors: Producer, Dispatcher, Co-Editors and Screen Manager.
+The purpose of this assignment is to gain experience with concurrent programming and synchronization mechanisms.  
+The scenario is also intended to give a feel for the performance impact of synchronization constructs under different loads.  
+The overall scenario we are simulating is that of news broadcasting. Different types of stories are produced and the system sorts them and displays them to the public.  
+In this assignment, the ‘new stories’ are simulated by simple strings which should be displayed to the screen in the order they arrive.  
+In the scenario that you should implement, there are 4 types of active actors: Producer, Dispatcher, Co-Editors and Screen Manager.  
 <img src="https://user-images.githubusercontent.com/92651125/186007234-86c36a37-732a-4618-bd4e-86351ccbf87f.png" width="800">
 
 ## Producer
 
-Each producer creates a number of strings in the following format (for example):  `Producer 2 SPORTS 0` 
-Where ‘2’ is the producers ID, ‘SPORTS' is a random type it chooses, and ‘0’ is the number of articles of that type this producer has already produced.
-Each of the producers passes its information to the Dispatcher (introduced below) via its own private queue.
-Each of the Producers private queue is shared between the Producer and the Dispatcher.
+Each producer creates a number of strings in the following format (for example):  `Producer 2 SPORTS 0`   
+Where ‘2’ is the producers ID, ‘SPORTS' is a random type it chooses, and ‘0’ is the number of articles of that type this producer has already produced.  
+Each of the producers passes its information to the Dispatcher (introduced below) via its own private queue.  
+Each of the Producers private queue is shared between the Producer and the Dispatcher.  
 
 ## Dispatcher
 
