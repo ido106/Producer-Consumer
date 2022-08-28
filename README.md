@@ -1,4 +1,5 @@
-# General Description
+# Producer-Consumer
+## General Description
 
 The purpose of this assignment is to gain experience with concurrent programming and synchronization mechanisms.  
 The scenario is also intended to give a feel for the performance impact of synchronization constructs under different loads.  
